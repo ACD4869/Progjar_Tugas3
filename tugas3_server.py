@@ -1,7 +1,7 @@
 import socket
 import threading
 
-def read_msg(clients, sock_cli, addr_cli, username_cli):
+def read_msg(clients, sock_cli, addr_cli, username_cli, userlist, friendlist):
     while True:
 
         # Terima pesan
@@ -10,19 +10,26 @@ def read_msg(clients, sock_cli, addr_cli, username_cli):
             break
 
         # Parsing pesan
-        dest, msg = data.decode("utf-8").split("|")
-        msg = "<{}>: {}".format(username_cli, msg)
-
-        # Teruskan ke semua client
-        if dest == "bcast":
-            send_bcast(clients, msg, addr_cli)
-        else:
-            dest_sock_cli = clients[dest][0]
-            send_msg(dest_sock_cli, msg)
-        print(data)
-
+        msg = data.decode("utf-8")
+        if msg == "Tambah teman":
+            send_msg(sock_cli, "\nDaftar user tersedia:")
+            for user in userlist:
+                if user != username_cli and user not in friendlist[username_cli]:
+                    send_msg(sock_cli, user)
+            adduser = sock_cli.recv(65535).decode("utf-8")
+            if adduser != username_cli and adduser in userlist:
+                friendlist[username_cli].append(adduser)
+                friendlist[adduser].append(username_cli)
+                send_msg(sock_cli, adduser + " berhasil ditambahkan")
+                print(username_cli + " dan " + adduser + " sekarang berteman")
+            else:
+                send_msg(sock_cli, "Username tidak ditemukan")
     sock_cli.close()
     print("Connection closed", addr_cli)
+    userlist.remove(username_cli)
+    #for flist in friendlist:
+    #    flist.remove(username_cli)
+    #friendlist[username_cli] = []
 
 # Broadcast
 def send_bcast(clients, data, sender_addr_cli):
@@ -44,6 +51,8 @@ sock_server.listen(5)
 
 # Dictionary informasi klien
 clients = {}
+userlist = []
+friendlist = {}
 
 while True:
     # Accept connection dari klien
@@ -52,10 +61,12 @@ while True:
     # Baca Username
     username_cli = sock_cli.recv(65535).decode("utf-8")
     print(username_cli, " joined")
+    userlist.append(username_cli)
 
     # Thread untuk membaca pesan
-    thread_cli = threading.Thread(target=read_msg, args=(clients, sock_cli, addr_cli, username_cli))
+    thread_cli = threading.Thread(target=read_msg, args=(clients, sock_cli, addr_cli, username_cli, userlist, friendlist))
     thread_cli.start()
 
     # Simpan informasi klien ke dictionary
     clients[username_cli] = (sock_cli, addr_cli, thread_cli)
+    friendlist[username_cli] = []
