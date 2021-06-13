@@ -24,12 +24,15 @@ def read_msg(clients, sock_cli, addr_cli, username_cli, userlist, friendlist):
                 print(username_cli + " dan " + adduser + " sekarang berteman")
             else:
                 send_msg(sock_cli, "Username tidak ditemukan")
+        elif msg == "Kirim pesan pribadi":
+            print("Kirim pesan pribadi") #placeholder
+        elif msg == "Kirim pesan broadcast": #placeholder
+            print("Kirim pesan broadcast")
+        elif msg == "Kirim file": #placeholder
+            print("Kirim file")
     sock_cli.close()
     print("Connection closed", addr_cli)
     userlist.remove(username_cli)
-    #for flist in friendlist:
-    #    flist.remove(username_cli)
-    #friendlist[username_cli] = []
 
 # Broadcast
 def send_bcast(clients, data, sender_addr_cli):
