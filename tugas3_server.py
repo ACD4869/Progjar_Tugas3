@@ -10,29 +10,32 @@ def read_msg(clients, sock_cli, addr_cli, username_cli, userlist, friendlist):
             break
 
         # Parsing pesan
-        msg = data.decode("utf-8")
-        if msg == "Tambah teman":
-            send_msg(sock_cli, "\nDaftar user tersedia:")
-            for user in userlist:
-                if user != username_cli and user not in friendlist[username_cli]:
-                    send_msg(sock_cli, user)
-            adduser = sock_cli.recv(65535).decode("utf-8")
-            if adduser != username_cli and adduser in userlist:
-                friendlist[username_cli].append(adduser)
-                friendlist[adduser].append(username_cli)
-                send_msg(sock_cli, adduser + " berhasil ditambahkan")
-                print(username_cli + " dan " + adduser + " sekarang berteman")
+        msg = data.decode("utf-8").split("|")
+        if len(msg) == 1:
+            if msg[0] not in userlist:
+                send_msg(sock_cli, msg[0] + " tidak ditemukan")
+            elif msg[0] in friendlist[username_cli]:
+                send_msg(sock_cli, "Sudah berteman dengan " + msg[0])
+            elif msg[0] != username_cli:
+                friendlist[username_cli].append(msg[0])
+                friendlist[msg[0]].append(username_cli)
+                send_msg(sock_cli, msg[0] + " berhasil ditambahkan")
+                send_msg(clients[msg[0]][0], username_cli + " telah menambahkanmu")
+        elif len(msg) == 2:
+            sendmsg = "<{}>: {}".format(username_cli, msg[1])
+            if msg[0] == "bcast":
+                send_bcast(clients, sendmsg, addr_cli)
             else:
-                send_msg(sock_cli, "Username tidak ditemukan")
-        elif msg == "Kirim pesan pribadi":
-            print("Kirim pesan pribadi") #placeholder
-        elif msg == "Kirim pesan broadcast": #placeholder
-            print("Kirim pesan broadcast")
-        elif msg == "Kirim file": #placeholder
-            print("Kirim file")
+                if msg[0] in friendlist[username_cli]:
+                    send_msg(clients[msg[0]][0], sendmsg)
+                else:
+                    send_msg(sock_cli, "User belum menjadi temanmu")
     sock_cli.close()
     print("Connection closed", addr_cli)
     userlist.remove(username_cli)
+    for user in friendlist:
+        if username_cli in friendlist[user]:
+            friendlist[user].remove(username_cli)
 
 # Broadcast
 def send_bcast(clients, data, sender_addr_cli):
